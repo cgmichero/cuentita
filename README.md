@@ -1,0 +1,2 @@
+# cuentita
+Aplicacion de gastos
