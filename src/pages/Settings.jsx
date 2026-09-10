@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Download, Upload, Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { Download, Upload, Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, Smartphone } from "lucide-react";
 import { exportBackup, importBackup, downloadBackupJSON } from "../backup.js";
 import {
   initDrive, requestDriveAccess, disconnectDrive, isConnected,
@@ -17,7 +17,7 @@ function setLastBackup() {
   localStorage.setItem(LAST_BACKUP_KEY, String(Date.now()));
 }
 
-export default function Settings({ onImportDone }) {
+export default function Settings({ onImportDone, canInstall, onInstall }) {
   const [driveReady, setDriveReady] = useState(false);
   const [driveConnected, setDriveConnected] = useState(false);
   const [status, setStatus] = useState(null); // { type: 'ok'|'error', msg }
@@ -170,6 +170,15 @@ export default function Settings({ onImportDone }) {
             </div>
           )}
         </Section>
+
+        {canInstall && (
+          <Section title="Instalar app">
+            <p style={hint}>Instalá Cuentita en la pantalla de inicio de tu dispositivo para usarla como app nativa.</p>
+            <button onClick={onInstall} style={btnPrimary}>
+              <Smartphone size={15} /> Instalar en este dispositivo
+            </button>
+          </Section>
+        )}
 
         <Section title="Sobre la app">
           <p style={{ ...hint, marginBottom: 0 }}>

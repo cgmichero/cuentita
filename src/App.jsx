@@ -17,11 +17,24 @@ const TABS = [
 const BACKUP_KEY = "cuentita_last_backup";
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
+export let installPrompt = null;
+
 export default function App() {
   const [tab, setTab] = useState("gastos");
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [catsLoaded, setCatsLoaded] = useState(false);
   const [showBackupBanner, setShowBackupBanner] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      installPrompt = e;
+      setCanInstall(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -90,7 +103,13 @@ export default function App() {
           <Module3 />
         </div>
         <div style={{ display: tab === "ajustes" ? "block" : "none" }}>
-          <SettingsPage />
+          <SettingsPage canInstall={canInstall} onInstall={async () => {
+            if (!installPrompt) return;
+            installPrompt.prompt();
+            await installPrompt.userChoice;
+            installPrompt = null;
+            setCanInstall(false);
+          }} />
         </div>
       </div>
 
