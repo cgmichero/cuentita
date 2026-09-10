@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+
+.num {
+  font-family: 'Quicksand', ui-rounded, 'SF Pro Rounded', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+::selection { background: #4F46E533; }
