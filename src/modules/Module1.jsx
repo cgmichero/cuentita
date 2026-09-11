@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { Plus, Pencil, X, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download } from "lucide-react";
+import { Plus, Pencil, X, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download, Upload } from "lucide-react";
 import { dbGet, dbSet } from "../db.js";
 import { INK, BG, GREEN, RED, GRAY, PRIMARY, DEFAULT_CATEGORIES } from "../constants.js";
 import { fmt, fmtCompact, todayStr, uid, monthKey, monthLabel, downloadCSV } from "../utils.js";
@@ -20,6 +20,8 @@ export default function Module1({ categories, onCategoriesChange }) {
   const [editComment, setEditComment] = useState("");
   const [historyFor, setHistoryFor] = useState(null);
   const [showCatManager, setShowCatManager] = useState(false);
+  const [csvPreview, setCsvPreview] = useState(null);
+  const csvInputRef = useRef(null);
   const [chartTab, setChartTab] = useState("categoria");
   const [filterType, setFilterType] = useState("all");
   const [filterCat, setFilterCat] = useState("all");
@@ -106,6 +108,24 @@ export default function Module1({ categories, onCategoriesChange }) {
 
   const deleteMovement = (id) => setMovements((prev) => prev.filter((m) => m.id !== id));
 
+  const handleCSVFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = parseCSVRows(ev.target.result, categories);
+      setCsvPreview(result);
+    };
+    reader.readAsText(file, "utf-8");
+  };
+
+  const confirmImport = () => {
+    const newMovs = csvPreview.valid.map((row) => ({ id: uid(), ...row, history: [] }));
+    setMovements((prev) => [...prev, ...newMovs]);
+    setCsvPreview(null);
+  };
+
   const exportCSV = () => {
     const rows = [
       ["Fecha", "Tipo", "Categoría", "Descripción", "Monto"],
@@ -191,6 +211,8 @@ export default function Module1({ categories, onCategoriesChange }) {
         <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={15} /> Nuevo movimiento</button>
         <button onClick={() => setShowCatManager(true)} style={btnGhost}>Categorías</button>
         <button onClick={exportCSV} style={btnGhost} title="Exportar a CSV"><Download size={14} /> CSV</button>
+        <button onClick={() => csvInputRef.current?.click()} style={btnGhost} title="Importar CSV"><Upload size={14} /> Importar</button>
+        <input ref={csvInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCSVFile} />
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={selectStyle}>
           <option value="all">Todos</option>
           <option value="income">Ingresos</option>
@@ -254,6 +276,9 @@ export default function Module1({ categories, onCategoriesChange }) {
             </div>
           ))}
         </Overlay>
+      )}
+      {csvPreview && (
+        <CSVPreviewModal preview={csvPreview} onConfirm={confirmImport} onCancel={() => setCsvPreview(null)} />
       )}
       {showCatManager && (
         <CategoryManager
@@ -344,3 +369,120 @@ const iconBtn = { background: "none", border: "none", color: INK, opacity: 0.65,
 const selectStyle = { border: `1.5px solid ${INK}26`, borderRadius: 10, padding: "8px 8px", fontSize: 13, background: "#fff", color: INK };
 const inputStyle = { width: "100%", border: `1.5px solid ${INK}26`, borderRadius: 10, padding: "9px 10px", fontSize: 14, background: "#fff", color: INK, boxSizing: "border-box" };
 const toggleBtn = { flex: 1, padding: "8px 0", borderRadius: 10, border: `1.5px solid ${INK}26`, background: "transparent", color: INK, fontSize: 13.5, fontWeight: 600 };
+
+function parseCsvLine(line) {
+  const cols = [];
+  let cur = "";
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuote) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuote = false;
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === ',') { cols.push(cur); cur = ""; }
+      else { cur += ch; }
+    }
+  }
+  cols.push(cur);
+  return cols;
+}
+
+function parseCSVRows(text, categories) {
+  const cleaned = text.replace(/^﻿/, "");
+  const lines = cleaned.split(/\r?\n/);
+  const valid = [];
+  const rejected = [];
+  let otrosCount = 0;
+
+  const otrosCat = categories.find((c) => c.name.toLowerCase() === "otros") || { id: "otros" };
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const cols = parseCsvLine(line);
+    if (cols.length < 5) {
+      rejected.push({ row: i + 1, reason: "Formato inválido (menos de 5 columnas)" });
+      continue;
+    }
+
+    const fecha = cols[0].trim();
+    const tipo = cols[1].trim();
+    const categoria = cols[2].trim();
+    const descripcion = cols[3].trim();
+    const monto = cols[4].trim();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || isNaN(new Date(fecha).getTime())) {
+      rejected.push({ row: i + 1, reason: `Fecha inválida: "${fecha}"` });
+      continue;
+    }
+    if (tipo !== "Ingreso" && tipo !== "Gasto") {
+      rejected.push({ row: i + 1, reason: `Tipo inválido: "${tipo}"` });
+      continue;
+    }
+    const amount = parseFloat(monto);
+    if (isNaN(amount) || amount <= 0) {
+      rejected.push({ row: i + 1, reason: `Monto inválido: "${monto}"` });
+      continue;
+    }
+
+    const matchedCat = categories.find((c) => c.name.toLowerCase() === categoria.toLowerCase());
+    let catId;
+    if (!matchedCat) {
+      catId = otrosCat.id;
+      otrosCount++;
+    } else {
+      catId = matchedCat.id;
+    }
+
+    valid.push({ type: tipo === "Ingreso" ? "income" : "expense", amount, category: catId, description: descripcion, date: fecha });
+  }
+
+  return { valid, rejected, otrosCount };
+}
+
+function CSVPreviewModal({ preview, onConfirm, onCancel }) {
+  const { valid, rejected, otrosCount } = preview;
+  return (
+    <Overlay onClose={onCancel} title="Vista previa — Importar CSV">
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 6 }}>
+          {valid.length} movimiento{valid.length !== 1 ? "s" : ""} válido{valid.length !== 1 ? "s" : ""} para importar
+        </div>
+        {otrosCount > 0 && (
+          <div style={{ fontSize: 13, color: GRAY, marginBottom: 4 }}>
+            · {otrosCount} fila{otrosCount !== 1 ? "s" : ""} con categoría no reconocida → se asignará a <strong>Otros</strong>
+          </div>
+        )}
+        {rejected.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: RED, marginBottom: 6 }}>
+              {rejected.length} fila{rejected.length !== 1 ? "s" : ""} rechazada{rejected.length !== 1 ? "s" : ""}:
+            </div>
+            <div style={{ maxHeight: 160, overflowY: "auto", fontSize: 12.5, color: RED, lineHeight: 1.7 }}>
+              {rejected.map((r) => (
+                <div key={r.row}>Fila {r.row}: {r.reason}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <button onClick={onCancel} style={{ ...btnGhost, flex: 1, justifyContent: "center" }}>Cancelar</button>
+        <button
+          disabled={valid.length === 0}
+          onClick={onConfirm}
+          style={{ ...btnPrimary, flex: 1, justifyContent: "center", opacity: valid.length === 0 ? 0.4 : 1 }}
+        >
+          Importar {valid.length} movimiento{valid.length !== 1 ? "s" : ""}
+        </button>
+      </div>
+    </Overlay>
+  );
+}
