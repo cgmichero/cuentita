@@ -181,10 +181,14 @@ export default function Settings({ onImportDone, canInstall, onInstall }) {
         )}
 
         <Section title="Sobre la app">
-          <p style={{ ...hint, marginBottom: 0 }}>
+          <p style={{ ...hint }}>
             <strong>Cuentita v1.0</strong><br />
             Tus datos se guardan localmente en este dispositivo. Usá el backup para llevarlos a otro dispositivo o como respaldo.
           </p>
+          <div style={{ display: "flex", gap: 16 }}>
+            <a href="/cuentita/privacy.html" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, textDecoration: "none", fontWeight: 600 }}>Política de privacidad</a>
+            <a href="/cuentita/terms.html" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, textDecoration: "none", fontWeight: 600 }}>Términos de uso</a>
+          </div>
         </Section>
       </div>
 
