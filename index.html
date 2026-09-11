@@ -1,54 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>cuentita</title>
-<meta name="description" content="cuentita es una app personal para registrar ingresos y gastos, llevar el control de cuotas de tarjetas, y dividir gastos entre personas.">
-<style>
-  :root { --ink: #16213E; --bg: #F7F8FB; --primary: #4F46E5; --gold: #F5A623; }
-  body {
-    font-family: ui-sans-serif, system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 48px 20px 80px;
-    line-height: 1.6;
-  }
-  .badge {
-    width: 64px; height: 64px; border-radius: 16px; background: var(--primary);
-    display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
-  }
-  .badge span { color: var(--gold); font-size: 30px; font-weight: 800; }
-  h1 { font-size: 30px; font-weight: 800; margin: 0 0 8px; }
-  p.lead { font-size: 17px; opacity: 0.8; margin-bottom: 32px; }
-  h2 { font-size: 17px; font-weight: 700; margin-top: 28px; }
-  p, li { font-size: 15px; }
-  ul { padding-left: 20px; }
-  .links { margin-top: 40px; display: flex; gap: 20px; font-size: 14px; }
-  a { color: var(--primary); font-weight: 600; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-</style>
-</head>
-<body>
-  <div class="badge"><span>C</span></div>
-  <h1>cuentita</h1>
-  <p class="lead">Una app personal para registrar tus gastos, llevar el control de tus cuotas, y dividir cuentas con otras personas.</p>
-
-  <h2>Qué hace</h2>
-  <ul>
-    <li><strong>Ingresos y gastos del mes</strong>, con categorías, gráficos, e historial de ediciones.</li>
-    <li><strong>Cuotas y pagos futuros</strong> de tarjetas y créditos, para planificar los próximos meses.</li>
-    <li><strong>División de gastos</strong> entre grupos de personas (viajes, eventos), con cálculo automático de quién le debe a quién.</li>
-  </ul>
-
-  <h2>Tus datos</h2>
-  <p>Todo se guarda localmente en tu propio navegador. Opcionalmente podés conectar tu Google Drive para guardar una copia de respaldo — nunca se sube nada sin que lo indiques vos mismo.</p>
-
-  <div class="links">
-    <a href="./privacy.html">Política de Privacidad</a>
-    <a href="./terms.html">Condiciones del Servicio</a>
-  </div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Cuentita</title>
+    <meta name="description" content="Tu app personal de gastos" />
+    <meta name="theme-color" content="#4F46E5" />
+    <link rel="manifest" href="%BASE_URL%manifest.json" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Cuentita" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
