@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { Plus, Pencil, X, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download, Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Pencil, X, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download } from "lucide-react";
 import { dbGet, dbSet } from "../db.js";
 import { INK, BG, GREEN, RED, GRAY, PRIMARY, DEFAULT_CATEGORIES } from "../constants.js";
 import { fmt, fmtCompact, todayStr, uid, monthKey, monthLabel, downloadCSV } from "../utils.js";
@@ -20,8 +20,6 @@ export default function Module1({ categories, onCategoriesChange }) {
   const [editComment, setEditComment] = useState("");
   const [historyFor, setHistoryFor] = useState(null);
   const [showCatManager, setShowCatManager] = useState(false);
-  const [csvPreview, setCsvPreview] = useState(null);
-  const csvInputRef = useRef(null);
   const [chartTab, setChartTab] = useState("categoria");
   const [filterType, setFilterType] = useState("all");
   const [filterCat, setFilterCat] = useState("all");
@@ -118,24 +116,6 @@ export default function Module1({ categories, onCategoriesChange }) {
     downloadCSV(`gastos_${viewMode === "month" ? selectedMonth : selectedYear}.csv`, rows);
   };
 
-  const handleCSVFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    const text = await file.text();
-    const preview = parseImportCSV(text, categories);
-    setCsvPreview(preview);
-  };
-
-  const confirmImport = () => {
-    if (!csvPreview) return;
-    const newMovements = csvPreview.valid.map(({ date, type, amount, category, description }) => ({
-      id: uid(), date, type, amount, category, description, history: [],
-    }));
-    setMovements((prev) => [...prev, ...newMovements]);
-    setCsvPreview(null);
-  };
-
   if (!loaded) return <div style={{ padding: 40, color: INK }}>Cargando…</div>;
 
   return (
@@ -211,8 +191,6 @@ export default function Module1({ categories, onCategoriesChange }) {
         <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={15} /> Nuevo movimiento</button>
         <button onClick={() => setShowCatManager(true)} style={btnGhost}>Categorías</button>
         <button onClick={exportCSV} style={btnGhost} title="Exportar a CSV"><Download size={14} /> CSV</button>
-        <button onClick={() => csvInputRef.current?.click()} style={btnGhost} title="Importar CSV"><Upload size={14} /> Importar</button>
-        <input ref={csvInputRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={handleCSVFile} />
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={selectStyle}>
           <option value="all">Todos</option>
           <option value="income">Ingresos</option>
@@ -283,13 +261,6 @@ export default function Module1({ categories, onCategoriesChange }) {
           movements={movements}
           onClose={() => setShowCatManager(false)}
           onChange={onCategoriesChange}
-        />
-      )}
-      {csvPreview && (
-        <CSVPreviewModal
-          preview={csvPreview}
-          onCancel={() => setCsvPreview(null)}
-          onConfirm={confirmImport}
         />
       )}
     </div>
@@ -373,113 +344,3 @@ const iconBtn = { background: "none", border: "none", color: INK, opacity: 0.65,
 const selectStyle = { border: `1.5px solid ${INK}26`, borderRadius: 10, padding: "8px 8px", fontSize: 13, background: "#fff", color: INK };
 const inputStyle = { width: "100%", border: `1.5px solid ${INK}26`, borderRadius: 10, padding: "9px 10px", fontSize: 14, background: "#fff", color: INK, boxSizing: "border-box" };
 const toggleBtn = { flex: 1, padding: "8px 0", borderRadius: 10, border: `1.5px solid ${INK}26`, background: "transparent", color: INK, fontSize: 13.5, fontWeight: 600 };
-
-// ---- CSV import ----
-
-function parseCSVRows(text) {
-  const clean = text.replace(/^﻿/, "");
-  const lines = clean.split(/\r?\n/);
-  return lines.map((line) => {
-    const cells = [];
-    let cur = "", inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
-        else inQ = !inQ;
-      } else if (ch === "," && !inQ) {
-        cells.push(cur); cur = "";
-      } else {
-        cur += ch;
-      }
-    }
-    cells.push(cur);
-    return cells;
-  });
-}
-
-function isValidDate(str) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
-  const d = new Date(str);
-  return !isNaN(d.getTime());
-}
-
-function parseImportCSV(text, categories) {
-  const rows = parseCSVRows(text).filter((r) => r.some((c) => c.trim()));
-  const dataRows = rows.slice(1); // skip header
-  const otrosCat = categories.find((c) => c.id === "otros") || categories[categories.length - 1];
-  const valid = [];
-  const rejected = [];
-
-  dataRows.forEach((cells, idx) => {
-    const rowNum = idx + 2;
-    const [dateStr = "", tipoStr = "", catStr = "", descStr = "", montoStr = ""] = cells.map((c) => c.trim());
-
-    if (!isValidDate(dateStr)) {
-      rejected.push({ row: rowNum, reason: `Fecha inválida: "${dateStr}"` });
-      return;
-    }
-    const typeMap = { ingreso: "income", gasto: "expense" };
-    const type = typeMap[tipoStr.toLowerCase()];
-    if (!type) {
-      rejected.push({ row: rowNum, reason: `Tipo inválido: "${tipoStr}" (debe ser "Ingreso" o "Gasto")` });
-      return;
-    }
-    const amount = parseFloat(montoStr);
-    if (isNaN(amount) || amount <= 0) {
-      rejected.push({ row: rowNum, reason: `Monto inválido: "${montoStr}"` });
-      return;
-    }
-    const found = categories.find((c) => c.name.toLowerCase() === catStr.toLowerCase());
-    const category = found ? found.id : otrosCat.id;
-    valid.push({ date: dateStr, type, amount, description: descStr, category, fallback: !found });
-  });
-
-  return { valid, rejected, fallbackCount: valid.filter((r) => r.fallback).length };
-}
-
-function CSVPreviewModal({ preview, onCancel, onConfirm }) {
-  const { valid, rejected, fallbackCount } = preview;
-  return (
-    <Overlay onClose={onCancel} title="Vista previa — Importar CSV">
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: `${GREEN}14`, borderRadius: 10, color: GREEN, fontWeight: 600, fontSize: 13.5 }}>
-          <CheckCircle size={16} />
-          {valid.length} movimiento{valid.length !== 1 ? "s" : ""} válido{valid.length !== 1 ? "s" : ""}
-          {fallbackCount > 0 && (
-            <span style={{ fontWeight: 400, opacity: 0.85 }}>
-              &nbsp;({fallbackCount} se asignarán a "Otros" por categoría no reconocida)
-            </span>
-          )}
-        </div>
-
-        {rejected.length > 0 && (
-          <div style={{ padding: "10px 12px", background: `${RED}10`, borderRadius: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: RED, fontWeight: 600, fontSize: 13.5, marginBottom: 8 }}>
-              <AlertCircle size={16} />
-              {rejected.length} fila{rejected.length !== 1 ? "s" : ""} rechazada{rejected.length !== 1 ? "s" : ""}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {rejected.map((r) => (
-                <div key={r.row} style={{ fontSize: 12.5, color: RED, opacity: 0.85 }}>
-                  Fila {r.row}: {r.reason}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onCancel} style={{ ...btnGhost, flex: 1, justifyContent: "center" }}>Cancelar</button>
-        <button
-          onClick={onConfirm}
-          disabled={valid.length === 0}
-          style={{ ...btnPrimary, flex: 1, justifyContent: "center", opacity: valid.length === 0 ? 0.4 : 1 }}
-        >
-          Importar {valid.length} movimiento{valid.length !== 1 ? "s" : ""}
-        </button>
-      </div>
-    </Overlay>
-  );
-}
