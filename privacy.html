@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad — Cuentita</title>
+<style>
+  :root {
+    --ink: #16213E;
+    --bg: #F7F8FB;
+    --primary: #4F46E5;
+  }
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+  .updated { font-size: 13px; opacity: 0.55; margin-bottom: 32px; }
+  h2 { font-size: 18px; font-weight: 700; margin-top: 32px; }
+  p, li { font-size: 15px; }
+  a { color: var(--primary); font-weight: 600; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #fff; border: 1px solid #16213E22; border-radius: 6px; padding: 2px 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>Política de Privacidad — Cuentita</h1>
+  <p class="updated">Última actualización: septiembre de 2026</p>
+
+  <p>Cuentita es una aplicación personal de gestión de gastos. Esta página explica qué información maneja la app y cómo.</p>
+
+  <h2>Qué datos almacena la app</h2>
+  <p>Todos los datos que ingresás (movimientos de ingresos y gastos, categorías, cuotas y gastos futuros, grupos de división de gastos) se guardan <strong>únicamente en el almacenamiento local de tu propio navegador</strong> (IndexedDB). Esta app no tiene un servidor propio: ningún dato que cargues se envía a Cuentita ni a terceros salvo en el caso descrito a continuación.</p>
+
+  <h2>Backup en Google Drive (opcional)</h2>
+  <p>Si elegís conectar tu cuenta de Google Drive desde la app, se te va a pedir autorización mediante el inicio de sesión estándar de Google. Cuentita solicita el permiso <code>drive.file</code>, el más restrictivo que ofrece Google: con este permiso, la app <strong>solo puede ver y modificar los archivos que ella misma crea</strong> — nunca accede al resto de tu Google Drive.</p>
+  <p>Con ese permiso, la app crea (o actualiza) un único archivo de respaldo en tu Drive, únicamente cuando vos tocás el botón de hacer backup. La app nunca sube nada de forma automática o silenciosa sin que lo indiques.</p>
+  <p>Este backup es una copia de tus propios datos financieros, guardada en tu propia cuenta de Google Drive. Cuentita no tiene acceso a ese archivo desde ningún servidor propio — el archivo vive en tu Drive, bajo tu control total, y podés desconectar el acceso o borrarlo en cualquier momento desde la configuración de tu cuenta de Google.</p>
+
+  <h2>Qué NO hace esta app</h2>
+  <ul>
+    <li>No usa analíticas, rastreadores ni cookies de terceros.</li>
+    <li>No vende, comparte ni transfiere tus datos a nadie.</li>
+    <li>No requiere crear una cuenta ni iniciar sesión para usar sus funciones principales — conectar Google Drive es completamente opcional.</li>
+    <li>No accede a ningún otro archivo de tu Google Drive más allá del backup que ella misma crea.</li>
+  </ul>
+
+  <h2>Control sobre tus datos</h2>
+  <p>Como todos tus datos viven en tu propio navegador (y, opcionalmente, en tu propio Google Drive), tenés control total: podés exportarlos, borrarlos, o desconectar el acceso a Google Drive en cualquier momento.</p>
+
+  <h2>Contacto</h2>
+  <p>Ante cualquier duda sobre esta política, podés escribir a <a href="mailto:cgmichero@gmail.com">cgmichero@gmail.com</a>.</p>
+</body>
+</html>
