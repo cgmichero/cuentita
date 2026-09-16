@@ -181,10 +181,10 @@ export default function Module1({ categories, onCategoriesChange }) {
                     {pieData.map((d, i) => <Cell key={i} fill={d.color} stroke={BG} strokeWidth={2} />)}
                   </Pie>
                   <Tooltip
-                    formatter={(v) => {
+                    formatter={(v, name) => {
                       const total = pieData.reduce((s, d) => s + d.value, 0);
                       const pct = total > 0 ? ((v / total) * 100).toFixed(1) : "0.0";
-                      return [`${fmt(v)} (${pct}%)`];
+                      return [`${fmt(v)} (${pct}%)`, name];
                     }}
                     contentStyle={{ fontFamily: "inherit", fontSize: 13, borderRadius: 8, border: `1px solid ${INK}22` }}
                   />
