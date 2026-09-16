@@ -180,7 +180,14 @@ export default function Module1({ categories, onCategoriesChange }) {
                   <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={48} outerRadius={82} paddingAngle={3}>
                     {pieData.map((d, i) => <Cell key={i} fill={d.color} stroke={BG} strokeWidth={2} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontFamily: "inherit", fontSize: 13, borderRadius: 8, border: `1px solid ${INK}22` }} />
+                  <Tooltip
+                    formatter={(v) => {
+                      const total = pieData.reduce((s, d) => s + d.value, 0);
+                      const pct = total > 0 ? ((v / total) * 100).toFixed(1) : "0.0";
+                      return [`${fmt(v)} (${pct}%)`];
+                    }}
+                    contentStyle={{ fontFamily: "inherit", fontSize: 13, borderRadius: 8, border: `1px solid ${INK}22` }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
