@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { Plus, Pencil, X, Clock, ArrowUpRight, ArrowDownRight, Trash2, Download, Upload } from "lucide-react";
 import { dbGet, dbSet } from "../db.js";
-import { INK, BG, GREEN, RED, GRAY, PRIMARY, DEFAULT_CATEGORIES } from "../constants.js";
+import { INK, BG, GREEN, RED, GRAY, PRIMARY, DEFAULT_CATEGORIES, COLOR_PALETTE } from "../constants.js";
 import { fmt, fmtCompact, todayStr, uid, monthKey, monthLabel, downloadCSV } from "../utils.js";
 import Overlay from "../components/Overlay.jsx";
 import Field from "../components/Field.jsx";
@@ -121,6 +121,9 @@ export default function Module1({ categories, onCategoriesChange }) {
   };
 
   const confirmImport = () => {
+    if (csvPreview.newCategories.length > 0) {
+      onCategoriesChange([...categories, ...csvPreview.newCategories]);
+    }
     const newMovs = csvPreview.valid.map((row) => ({ id: uid(), ...row, history: [] }));
     setMovements((prev) => [...prev, ...newMovs]);
     setCsvPreview(null);
@@ -398,7 +401,7 @@ function parseCSVRows(text, categories) {
   const lines = cleaned.split(/\r?\n/);
   const valid = [];
   const rejected = [];
-  let otrosCount = 0;
+  const newCatMap = {}; // lowercased name → { id, name, color, icon }
 
   const otrosCat = categories.find((c) => c.name.toLowerCase() === "otros") || { id: "otros" };
 
@@ -432,32 +435,41 @@ function parseCSVRows(text, categories) {
       continue;
     }
 
-    const matchedCat = categories.find((c) => c.name.toLowerCase() === categoria.toLowerCase());
     let catId;
-    if (!matchedCat) {
+    if (!categoria) {
       catId = otrosCat.id;
-      otrosCount++;
     } else {
-      catId = matchedCat.id;
+      const matchedCat = categories.find((c) => c.name.toLowerCase() === categoria.toLowerCase());
+      if (matchedCat) {
+        catId = matchedCat.id;
+      } else {
+        const key = categoria.toLowerCase();
+        if (!newCatMap[key]) {
+          const offset = categories.length + Object.keys(newCatMap).length;
+          newCatMap[key] = { id: uid(), name: categoria, color: COLOR_PALETTE[offset % COLOR_PALETTE.length], icon: "Package" };
+        }
+        catId = newCatMap[key].id;
+      }
     }
 
     valid.push({ type: tipo === "Ingreso" ? "income" : "expense", amount, category: catId, description: descripcion, date: fecha });
   }
 
-  return { valid, rejected, otrosCount };
+  return { valid, rejected, newCategories: Object.values(newCatMap) };
 }
 
 function CSVPreviewModal({ preview, onConfirm, onCancel }) {
-  const { valid, rejected, otrosCount } = preview;
+  const { valid, rejected, newCategories } = preview;
   return (
     <Overlay onClose={onCancel} title="Vista previa — Importar CSV">
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 6 }}>
           {valid.length} movimiento{valid.length !== 1 ? "s" : ""} válido{valid.length !== 1 ? "s" : ""} para importar
         </div>
-        {otrosCount > 0 && (
+        {newCategories.length > 0 && (
           <div style={{ fontSize: 13, color: GRAY, marginBottom: 4 }}>
-            · {otrosCount} fila{otrosCount !== 1 ? "s" : ""} con categoría no reconocida → se asignará a <strong>Otros</strong>
+            · Se crearán {newCategories.length} categoría{newCategories.length !== 1 ? "s" : ""} nueva{newCategories.length !== 1 ? "s" : ""}:{" "}
+            <strong>{newCategories.map((c) => c.name).join(", ")}</strong>
           </div>
         )}
         {rejected.length > 0 && (
